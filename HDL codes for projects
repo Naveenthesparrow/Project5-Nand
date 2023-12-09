@@ -1,0 +1,63 @@
+Project 5.1:
+Memory Hdl code:
+DMux4Way(in=load, sel=address[13..14], a=loadram1, b=loadram2, c=loadscreen, d=loadkbd);
+	Or(a=loadram1, b=loadram2, out=loadram);
+    RAM16K(in=in, load=loadram, address=address[0..13], out=ramout);
+    Screen(in=in, load=loadscreen, address=address[0..12], out=scrout);
+    Keyboard(out=kbout);
+    Mux4Way16(a=ramout, b=ramout, c=scrout, d=kbout, sel=address[13..14], out=out);
+}
+// 0000 000 RAM start
+// 0011 FFF RAM end
+// 0100 000 Screen start
+// 0101 FFF Screen end
+// 0110 000 Keyboard
+
+------------------------------------------------------------------------------------------------------------------------------------------------>
+
+Project 5.2
+CPU Hdl code:
+	Not(in=instruction[15],out=ni);
+	Mux16(a=outtM,b=instruction,sel=ni,out=i);
+
+	Or(a=ni,b=instruction[5],out=intoA);
+	ARegister(in=i,load=intoA,out=A,out[0..14]=addressM);
+
+	And(a=instruction[15],b=instruction[12],out=AorM);
+	Mux16(a=A,b=inM,sel=AorM,out=AM);
+	
+	ALU(x=D,y=AM,zx=instruction[11],nx=instruction[10],zy=instruction[9],ny=instruction[8],f=instruction[7],no=instruction[6],out=outtM,out=outM,zr=zr,ng=ng);
+
+	And(a=instruction[15],b=instruction[4],out=intoD);
+	DRegister(in=outtM,load=intoD,out=D);
+
+	And(a=instruction[15],b=instruction[3],out=writeM);
+
+	Not(in=ng,out=pos);
+	Not(in=zr,out=nzr);
+	And(a=instruction[15],b=instruction[0],out=jgt);
+	And(a=pos,b=nzr,out=posnzr);
+	And(a=jgt,b=posnzr,out=ld1);
+
+	And(a=instruction[15],b=instruction[1],out=jeq);
+	And(a=jeq,b=zr,out=ld2);
+
+	And(a=instruction[15],b=instruction[2],out=jlt);
+	And(a=jlt,b=ng,out=ld3);
+
+	Or(a=ld1,b=ld2,out=ldt);
+	Or(a=ld3,b=ldt,out=ld);
+
+	PC(in=A,load=ld,inc=true,reset=reset,out[0..14]=pc);
+}
+
+======================================================================================================================>
+
+Project 5.3:
+Computer hdl code:
+ROM32K(address=pc,out=instruction);
+
+	CPU(inM=inM,instruction=instruction,reset=reset,outM=outM,writeM=writeM,addressM=addressM,pc=pc);
+
+	Memory(in=outM,load=writeM,address=addressM,out=inM);
+}
